@@ -27,6 +27,7 @@ def retrieve_parts(data_path):
 class WikiTextDataset(Dataset):
     def __init__(self, data_path: str, max_length: int = MAX_LENGTH):
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
+        self.tokenizer.model_max_length = 640
         data = retrieve_parts(data_path)
         self.input_ids = []
         for s in data:

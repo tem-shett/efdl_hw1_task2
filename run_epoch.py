@@ -12,6 +12,7 @@ from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraD
 from .dataset import collate_fn_brain
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+tokenizer.model_max_length = 640
 
 class DataMode(Enum):
     BRAIN = 1

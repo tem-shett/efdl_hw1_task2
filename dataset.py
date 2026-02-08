@@ -50,12 +50,9 @@ class BigBrainDataset(WikiTextDataset):
     pass
 
 
-class UltraBigBrainDataset(Dataset):
-    def __init__(self, data_path: str, max_length: int = MAX_LENGTH, n_bins: int = 1):
-        pass
+class UltraBigBrainDataset(WikiTextDataset):
+    pass
 
-    def __getitem__(self, idx: int):
-        pass
 
 
 class UltraDuperBigBrainDataset(Dataset):
@@ -111,14 +108,29 @@ def collate_fn_bigbrain(
     causal_mask = generate_square_subsequent_mask(T)
     return torch.tensor(src_ids), torch.tensor(tgt_ids), causal_mask, key_padding_mask
 
+def collate_fn_ultrabigbrain(batch: list[list[int]], max_length: Optional[int] = MAX_LENGTH):
+    return collate_fn_bigbrain(batch, max_length)
 
 class UltraBigBrainBatchSampler(Sampler):
 
-    def __init__(self, batch_size: int, max_length: Optional[int] = MAX_LENGTH):
-        pass
+    def __init__(self, dataset: UltraBigBrainDataset, batch_size: int, max_length: Optional[int] = MAX_LENGTH, k: int = 1):
+        self.batches = []
+        self.batch_by_len = [[] for _ in range(max_length + 1)]
+        rand_order = list(range(len(dataset)))
+        random.shuffle(rand_order)
+        for i in rand_order:
+            el = dataset[i]
+            rand_ind = random.randint(len(el), min(len(el) + k, max_length))
+            self.batch_by_len[rand_ind].append(el)
+            if len(self.batch_by_len[rand_ind]) == batch_size:
+                self.batches.append(self.batch_by_len[rand_ind])
+                self.batch_by_len[rand_ind] = []
+        for len in range(1, max_length + 1):
+            if len(self.batch_by_len[len]) > 0:
+                self.batches.append(self.batch_by_len[len])
 
     def __len__(self):
-        pass
+        return len(self.batches)
 
     def __iter__(self):
-        pass
+        return iter(self.batches)

@@ -9,8 +9,8 @@ import numpy as np
 import os
 
 from .model import GPT2LikeModel
-from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraDuperBigBrainDataset
-from .dataset import collate_fn_brain, collate_fn_bigbrain
+from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraBigBrainBatchSampler, UltraDuperBigBrainDataset
+from .dataset import collate_fn_brain, collate_fn_bigbrain, collate_fn_ultrabigbrain
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -25,13 +25,18 @@ class DataMode(Enum):
 def get_gpt2_model() -> torch.nn.Module:
     return GPT2LikeModel(tokenizer.vocab_size)
 
-def get_dataloader(data_mode, batch_size):
+def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
     if data_mode == DataMode.BRAIN:
         dataset = BrainDataset(data_path="wikitext")
         return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_brain, num_workers=4, pin_memory=True)
     elif data_mode == DataMode.BIG_BRAIN:
         dataset = BigBrainDataset(data_path="wikitext")
         return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_bigbrain, num_workers=4, pin_memory=True)
+    elif data_mode == DataMode.ULTRA_BIG_BRAIN:
+        dataset = UltraBigBrainDataset(data_path="wikitext")
+        sampler = UltraBigBrainBatchSampler(dataset, batch_size, k)
+        return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_ultrabigbrain, sampler=sampler, num_workers=4, pin_memory=True)
+
     raise NotImplementedError
 
 @torch.no_grad()

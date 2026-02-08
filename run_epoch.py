@@ -38,7 +38,6 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
     device = "cuda"
     model = get_gpt2_model().to(device)
     print("Model is ready")
-    dataloader = get_dataloader(data_mode, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
     for i, batch in tqdm(enumerate(dataloader)):

@@ -27,14 +27,14 @@ def retrieve_parts(data_path):
 class WikiTextDataset(Dataset):
     def __init__(self, data_path: str, max_length: int = MAX_LENGTH):
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", use_fast=True)
-        self.tokenizer.model_max_length = 640
         data = retrieve_parts(data_path)
         self.input_ids = []
         for s in data:
             token_ids = self.tokenizer.encode(s, add_special_tokens=False)
             if 0 < len(token_ids) <= MAX_LENGTH:
                 self.input_ids.append(token_ids)
-        self.input_ids = self.input_ids[:30000]
+                if len(self.input_ids) >= 30000:
+                    break
 
     def __len__(self):
         return len(self.input_ids)
@@ -79,7 +79,7 @@ def collate_fn_brain(
     T = max_length - 1
     src_ids = []
     tgt_ids = []
-    key_padding_mask = torch.zeros((B, T), dtype=torch.bool)
+    key_padding_mask = torch.zeros((B, T), dtype=torch.float)
     for i, tokens in enumerate(batch):
         src_ids.append(tokens[:-1] + [0] * (T - (len(tokens) - 1)))
         tgt_ids.append(tokens[1:] + [0] * (T - len(tokens) - 1))

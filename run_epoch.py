@@ -6,13 +6,14 @@ from torch.utils.data import DataLoader
 from time import perf_counter
 from tqdm.cli import tqdm
 import numpy as np
+import os
 
 from .model import GPT2LikeModel
 from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraDuperBigBrainDataset
 from .dataset import collate_fn_brain
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-tokenizer.model_max_length = 640
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 class DataMode(Enum):
     BRAIN = 1
@@ -43,7 +44,7 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
             break
         src, tgt, causal_mask, key_padding_mask = map(lambda x: x.to(device), batch)
         pred = model(src, causal_mask, key_padding_mask)
-        loss = criterion(pred.flatten(), tgt.flatten())
+        loss = criterion(pred.flatten(0, 1), tgt.flatten())
     
     torch.cuda.synchronize()
     batch_time = []
@@ -51,7 +52,7 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
         start_time = perf_counter()
         src, tgt, causal_mask, key_padding_mask = map(lambda x: x.to(device), batch)
         pred = model(src, causal_mask, key_padding_mask)
-        loss = criterion(pred.flatten(), tgt.flatten())
+        loss = criterion(pred.flatten(0, 1), tgt.flatten())
         torch.cuda.synchronize()
         batch_time.append(perf_counter() - start_time)
 

@@ -17,7 +17,7 @@ def retrieve_parts(data_path):
     for filename in os.listdir(data_path):
         if not filename.startswith('train'):
             continue
-        with open(os.join(data_path, filename), 'r') as f:
+        with open(os.path.join(data_path, filename), 'r') as f:
             parts += [p.strip() for p in f.read().split('\n') if 0 < len(p.strip())]
 
     random.seed(179)

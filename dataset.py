@@ -79,7 +79,7 @@ def collate_fn_brain(
     T = max_length - 1
     src_ids = []
     tgt_ids = []
-    key_padding_mask = torch.zeros((B, T), dtype=torch.BoolType)
+    key_padding_mask = torch.zeros((B, T), dtype=torch.float)
     for i, tokens in enumerate(batch):
         src_ids.append(tokens[:-1] + [0] * (T - (len(tokens) - 1)))
         tgt_ids.append(tokens[1:] + [0] * (T - (len(tokens) - 1)))

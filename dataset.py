@@ -89,6 +89,29 @@ def collate_fn_brain(
     return torch.tensor(src_ids), torch.tensor(tgt_ids), causal_mask, key_padding_mask
 
 
+def collate_fn_bigbrain(
+    batch: list[list[int]], max_length: Optional[int] = MAX_LENGTH
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Pad each sequence of the incoming sequences list
+    :param batch: a list of the objects received from the dataset by __getitem__
+    :param max_length: maximum sequence length to pad to (for "Brain" approach only)
+    :return: tuple of padded sequences and corresponding training targets
+    """
+    B = len(batch)
+    T = max(len(el) for el in batch) - 1
+    src_ids = []
+    tgt_ids = []
+    key_padding_mask = torch.zeros((B, T), dtype=torch.float)
+    for i, tokens in enumerate(batch):
+        src_ids.append(tokens[:-1] + [0] * (T - (len(tokens) - 1)))
+        tgt_ids.append(tokens[1:] + [0] * (T - (len(tokens) - 1)))
+        key_padding_mask[i, len(tokens) - 1:] = True
+    
+    causal_mask = generate_square_subsequent_mask(T)
+    return torch.tensor(src_ids), torch.tensor(tgt_ids), causal_mask, key_padding_mask
+
+
 class UltraBigBrainBatchSampler(Sampler):
 
     def __init__(self, batch_size: int, max_length: Optional[int] = MAX_LENGTH):

@@ -10,7 +10,7 @@ import os
 
 from .model import GPT2LikeModel
 from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraDuperBigBrainDataset
-from .dataset import collate_fn_brain
+from .dataset import collate_fn_brain, collate_fn_bigbrain
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -29,6 +29,9 @@ def get_dataloader(data_mode, batch_size):
     if data_mode == DataMode.BRAIN:
         dataset = BrainDataset(data_path="wikitext")
         return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_brain, num_workers=4, pin_memory=True)
+    elif data_mode == DataMode.BIG_BRAIN:
+        dataset = BigBrainDataset(data_path="wikitext")
+        return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_bigbrain, num_workers=4, pin_memory=True)
     raise NotImplementedError
 
 @torch.no_grad()

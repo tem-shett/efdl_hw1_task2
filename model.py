@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-from transformer import PositionalEncoding, generate_square_subsequent_mask
+from .transformer import PositionalEncoding, generate_square_subsequent_mask
 
 
 class GPT2LikeModel(nn.Module):

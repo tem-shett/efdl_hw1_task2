@@ -45,7 +45,7 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
             break
         src, tgt, causal_mask, key_padding_mask = map(lambda x: x.to(device), batch)
         pred = model(src, causal_mask, key_padding_mask)
-        loss = criterion(pred.flatten(0, 1), tgt.flatten())
+        loss = criterion(pred.flatten(0, 1), tgt.flatten(0, 1))
     
     torch.cuda.synchronize()
     batch_time = []
@@ -53,7 +53,7 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
         start_time = perf_counter()
         src, tgt, causal_mask, key_padding_mask = map(lambda x: x.to(device), batch)
         pred = model(src, causal_mask, key_padding_mask)
-        loss = criterion(pred.flatten(0, 1), tgt.flatten())
+        loss = criterion(pred.flatten(0, 1), tgt.flatten(0, 1))
         torch.cuda.synchronize()
         batch_time.append(perf_counter() - start_time)
 

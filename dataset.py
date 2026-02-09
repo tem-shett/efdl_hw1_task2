@@ -158,7 +158,7 @@ class UltraDuperBigBrainDataset(WikiTextDataset):
                     self.segment_ids[-1] += [i] * len(self.input_ids_base[i])
         
         elif packing == Packing.OBFD:
-            bins = [[] for _ in range(self.input_ids_base)]
+            bins = [[] for _ in range(len(self.input_ids_base))]
 
             bins_by_left_length = [[] for _ in range(max_length + 1)]
             for i in range(len(self.input_ids_base)):

@@ -10,7 +10,7 @@ import os
 
 from .model import GPT2LikeModel
 from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraBigBrainBatchSampler, UltraDuperBigBrainDataset
-from .dataset import collate_fn_brain, collate_fn_bigbrain, collate_fn_ultrabigbrain
+from .dataset import collate_fn_brain, collate_fn_bigbrain, collate_fn_ultrabigbrain, collate_fn_ultaduperbigbrain
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -36,6 +36,9 @@ def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
         dataset = UltraBigBrainDataset(data_path="wikitext")
         sampler = UltraBigBrainBatchSampler(dataset, batch_size, k=k)
         return DataLoader(dataset=dataset, collate_fn=collate_fn_ultrabigbrain, batch_sampler=sampler, num_workers=4, pin_memory=True)
+    elif data_mode == DataMode.ULTRA_DUPER_BIG_BRAIN:
+        dataset = UltraDuperBigBrainDataset(data_path="wikitext")
+        return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_ultaduperbigbrain, num_workers=4, pin_memory=True)
 
     raise NotImplementedError
 

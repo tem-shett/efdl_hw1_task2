@@ -16,6 +16,7 @@ class GPT2LikeModel(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.max_length = max_length
+        self.n_heads = n_heads
         self.token_emb = nn.Embedding(vocab_size, d_model)
         self.pos_emb = PositionalEncoding(d_model, dropout=dropout, max_len=max_length)
         decoder_layer = nn.TransformerDecoderLayer(
@@ -35,6 +36,9 @@ class GPT2LikeModel(nn.Module):
 
         x = self.token_emb(input_ids) * math.sqrt(self.d_model)
         x = self.pos_emb(x)
+
+        if causal_mask.dim() == 3:
+            causal_mask = causal_mask.unsqueeze(1).repeat(1, self.n_heads, 1, 1).flatten(0, 1)
 
         x = self.decoder(
             tgt=x,

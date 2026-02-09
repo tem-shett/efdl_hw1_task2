@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Optional
 
 import os
@@ -12,6 +13,7 @@ from .transformer import generate_square_subsequent_mask
 
 MAX_LENGTH = 640
 
+@lru_cache()
 def retrieve_parts(data_path):
     parts = []
     for filename in os.listdir(data_path):
@@ -49,18 +51,34 @@ class BrainDataset(WikiTextDataset):
 class BigBrainDataset(WikiTextDataset):
     pass
 
-
-class UltraBigBrainDataset(WikiTextDataset):
+class UltraBigBrainDataset(Dataset):
     pass
 
-
-
-class UltraDuperBigBrainDataset(Dataset):
+class UltraDuperBigBrainDataset(WikiTextDataset):
     def __init__(self, data_path: str, max_length: int = MAX_LENGTH):
-        pass
+        super().__init__(data_path, max_length)
+        self.input_ids_base = self.input_ids
+        self.input_ids = []
+        self.segment_ids = []
+        cur_input_ids = []
+        cur_seg_ids = []
+        for i in range(len(self.input_ids_base)):
+            if len(cur_input_ids) + len(self.input_ids_base[i]) > max_length:
+                self.input_ids.append(cur_input_ids)
+                self.segment_ids.append(cur_seg_ids)
+                cur_input_ids = []
+                cur_seg_ids = []
+            cur_input_ids += self.input_ids_base[i]
+            cur_seg_ids += [i] * len(self.input_ids_base[i])
+        if cur_input_ids:
+            self.input_ids.append(cur_input_ids)
+            self.segment_ids.append(cur_seg_ids)
 
-    def __getitem__(self, idx: int):
-        pass
+    def __len__(self):
+        return len(self.input_ids)
+
+    def __getitem__(self, idx):
+        return self.input_ids[idx], self.segment_ids[idx]
 
 
 def collate_fn_brain(
@@ -110,6 +128,35 @@ def collate_fn_bigbrain(
 
 def collate_fn_ultrabigbrain(batch: list[list[int]], max_length: Optional[int] = MAX_LENGTH):
     return collate_fn_bigbrain(batch, max_length)
+
+def collate_fn_ultaduperbigbrain(batch: list[tuple[list[int], list[int]]], max_length: Optional[int] = MAX_LENGTH):
+    B = len(batch)
+    T = max(len(el[0]) for el in batch) - 1
+    src_ids = []
+    tgt_ids = []
+    batch_seg_ids = []
+    for tokens, segs in batch:
+        pad_len = T + 1 - len(tokens)
+        padded_tokens = tokens + [0] * pad_len
+        padded_segs = segs + [0] * pad_len
+        src_ids.append(padded_tokens[:-1])
+        tgt_ids.append(padded_tokens[1:])
+        batch_seg_ids.append(padded_segs[:-1])
+    
+    src_tensor = torch.tensor(src_ids, dtype=torch.long)
+    tgt_tensor = torch.tensor(tgt_ids, dtype=torch.long)
+    seg_tensor = torch.tensor(batch_seg_ids, dtype=torch.long)
+
+    key_padding_mask = (src_tensor == 0)
+
+    causal_mask = torch.triu(torch.ones(T, T, dtype=torch.bool), diagonal=1)
+    cross_seg_mask = (seg_tensor.unsqueeze(2) != seg_tensor.unsqueeze(1))
+    combined_mask = causal_mask | cross_seg_mask
+    final_mask = torch.zeros_like(combined_mask, dtype=torch.float)
+    final_mask.masked_fill_(combined_mask, float('-inf'))
+
+    return src_tensor, tgt_tensor, final_mask, key_padding_mask
+
 
 class UltraBigBrainBatchSampler(Sampler):
 

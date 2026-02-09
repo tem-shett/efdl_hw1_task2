@@ -60,6 +60,55 @@ class Packing(Enum):
     FFD = 2
     OBFD = 3
 
+class SegmentTree:
+    def __init__(self, a):
+        self.n = len(a)
+        self.tree = [0] * (4 * self.n)
+        self.build(0, 0, self.n, a)
+    
+    def build(self, i, l, r, a):
+        if l + 1 == r:
+            self.tree[i] = a[l]
+            return
+        m = (l + r) // 2
+        self.build(i * 2 + 1, l, m, a)
+        self.build(i * 2 + 2, m, r, a)
+        self.tree[i] = max(self.tree[i * 2 + 1], self.tree[i * 2 + 2])
+
+    def upd(self, pos, qx):
+        self._upd(0, 0, self.n, pos, qx)
+    
+    def _upd(self, i, l, r, pos, qx):
+        if l + 1 == r:
+            self.tree[i] += qx
+            return
+        m = (l + r) // 2
+        if pos < m:
+            self._upd(i * 2 + 1, l, m, pos, qx)
+        else:
+            self._upd(i * 2 + 2, m, r, pos, qx)
+        self.tree[i] = max(self.tree[i * 2 + 1], self.tree[i * 2 + 2])
+    
+    def find_first_more(self, val):
+        res = -1
+
+        def search(i, l, r):
+            if r <= val:
+                return
+            if self.tree[i] == 0:
+                return
+            if res != -1:
+                return
+            if l + 1 == r:
+                res = l
+                return
+            m = (l + r) // 2
+            search(i * 2 + 1, l, m)
+            search(i * 2 + 2, m, r)
+        
+        assert res != -1
+        return res
+
 class UltraDuperBigBrainDataset(WikiTextDataset):
     def __init__(self, data_path: str, max_length: int = MAX_LENGTH, packing: Packing = Packing.Basic):
         super().__init__(data_path, max_length)
@@ -107,6 +156,41 @@ class UltraDuperBigBrainDataset(WikiTextDataset):
                 for i in inds:
                     self.input_ids[-1] += self.input_ids_base[i]
                     self.segment_ids[-1] += [i] * len(self.input_ids_base[i])
+        
+        elif packing == Packing.OBFD:
+            bins = [[] for _ in range(self.input_ids_base)]
+
+            bins_by_left_length = [[] for _ in range(max_length + 1)]
+            for i in range(len(self.input_ids_base)):
+                bins_by_left_length[max_length].append(i)
+            
+            st_a = [0] * (max_length + 1)
+            st_a[max_length] = len(self.input_ids_base)
+            st = SegmentTree(st_a)
+
+            inds_by_length = [[] for _ in range(max_length + 1)]
+            for i in range(len(self.input_ids_base)):
+                inds_by_length[len(self.input_ids_base[i])].append(i)
+            
+            for length in range(max_length, 0, -1):
+                for i in inds_by_length[length]:
+                    left_length = st.find_first_more(length)
+                    ind_bin = bins_by_left_length[left_length].pop()
+                    st.upd(left_length, -1)
+                    bins[ind_bin].append(i)
+                    bins_by_left_length[left_length - length].append(ind_bin)
+                    st.upd(left_length - length, 1)
+            
+            for inds in bins:
+                if not inds:
+                    continue
+                self.input_ids.append([])
+                self.segment_ids.append([])
+                for i in inds:
+                    self.input_ids[-1] += self.input_ids_base[i]
+                    self.segment_ids[-1] += [i] * len(self.input_ids_base[i])
+            
+
 
     def __len__(self):
         return len(self.input_ids)

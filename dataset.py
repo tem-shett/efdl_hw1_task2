@@ -121,7 +121,7 @@ class UltraBigBrainBatchSampler(Sampler):
         for i in rand_order:
             el = dataset[i]
             rand_ind = random.randint(len(el), min(len(el) + k, max_length))
-            self.batch_by_len[rand_ind].append(el)
+            self.batch_by_len[rand_ind].append(i)
             if len(self.batch_by_len[rand_ind]) == batch_size:
                 self.batches.append(self.batch_by_len[rand_ind])
                 self.batch_by_len[rand_ind] = []

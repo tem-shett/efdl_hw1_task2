@@ -11,6 +11,7 @@ import os
 from .model import GPT2LikeModel
 from .dataset import BrainDataset, BigBrainDataset, UltraBigBrainDataset, UltraBigBrainBatchSampler, UltraDuperBigBrainDataset
 from .dataset import collate_fn_brain, collate_fn_bigbrain, collate_fn_ultrabigbrain, collate_fn_ultaduperbigbrain
+from .dataset import Packing
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -25,7 +26,7 @@ class DataMode(Enum):
 def get_gpt2_model() -> torch.nn.Module:
     return GPT2LikeModel(tokenizer.vocab_size)
 
-def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
+def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1, packing: Packing = Packing.Basic):
     if data_mode == DataMode.BRAIN:
         dataset = BrainDataset(data_path="wikitext")
         return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_brain, num_workers=4, pin_memory=True)
@@ -37,14 +38,14 @@ def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
         sampler = UltraBigBrainBatchSampler(dataset, batch_size, k=k)
         return DataLoader(dataset=dataset, collate_fn=collate_fn_ultrabigbrain, batch_sampler=sampler, num_workers=4, pin_memory=True)
     elif data_mode == DataMode.ULTRA_DUPER_BIG_BRAIN:
-        dataset = UltraDuperBigBrainDataset(data_path="wikitext")
+        dataset = UltraDuperBigBrainDataset(data_path="wikitext", packing=packing)
         return DataLoader(dataset=dataset, batch_size=batch_size, collate_fn=collate_fn_ultaduperbigbrain, num_workers=4, pin_memory=True)
 
     raise NotImplementedError
 
 @torch.no_grad()
-def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5, k: int = 1) -> None:
-    dataloader = get_dataloader(data_mode, batch_size, k)
+def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5, k: int = 1, packing: Packing = Packing.Basic) -> None:
+    dataloader = get_dataloader(data_mode, batch_size, k, packing)
     print("Dataloader is ready")
     device = "cuda"
     model = get_gpt2_model().to(device)
@@ -60,6 +61,8 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
     
     torch.cuda.synchronize()
     batch_time = []
+
+    overall_start_time = perf_counter()
     for batch in tqdm(dataloader):
         start_time = perf_counter()
         src, tgt, causal_mask, key_padding_mask = map(lambda x: x.to(device), batch)
@@ -73,3 +76,4 @@ def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5
     print("Max:", np.max(batch_time))
     print("Mean:", np.mean(batch_time))
     print("Median:", np.median(batch_time))
+    print("Overall time:", perf_counter() - overall_start_time)

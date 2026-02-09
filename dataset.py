@@ -7,6 +7,7 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data import Sampler, IterableDataset
 from transformers import AutoTokenizer
 import random
+from enum import Enum
 
 from .transformer import generate_square_subsequent_mask
 
@@ -54,25 +55,58 @@ class BigBrainDataset(WikiTextDataset):
 class UltraBigBrainDataset(Dataset):
     pass
 
+class Packing(Enum):
+    Basic = 1
+    FFD = 2
+    OBFD = 3
+
 class UltraDuperBigBrainDataset(WikiTextDataset):
-    def __init__(self, data_path: str, max_length: int = MAX_LENGTH):
+    def __init__(self, data_path: str, max_length: int = MAX_LENGTH, packing: Packing = Packing.Basic):
         super().__init__(data_path, max_length)
         self.input_ids_base = self.input_ids
         self.input_ids = []
         self.segment_ids = []
-        cur_input_ids = []
-        cur_seg_ids = []
-        for i in range(len(self.input_ids_base)):
-            if len(cur_input_ids) + len(self.input_ids_base[i]) > max_length:
+
+        if packing == Packing.Basic:
+            cur_input_ids = []
+            cur_seg_ids = []
+            for i in range(len(self.input_ids_base)):
+                if len(cur_input_ids) + len(self.input_ids_base[i]) > max_length:
+                    self.input_ids.append(cur_input_ids)
+                    self.segment_ids.append(cur_seg_ids)
+                    cur_input_ids = []
+                    cur_seg_ids = []
+                cur_input_ids += self.input_ids_base[i]
+                cur_seg_ids += [i] * len(self.input_ids_base[i])
+            if cur_input_ids:
                 self.input_ids.append(cur_input_ids)
                 self.segment_ids.append(cur_seg_ids)
-                cur_input_ids = []
-                cur_seg_ids = []
-            cur_input_ids += self.input_ids_base[i]
-            cur_seg_ids += [i] * len(self.input_ids_base[i])
-        if cur_input_ids:
-            self.input_ids.append(cur_input_ids)
-            self.segment_ids.append(cur_seg_ids)
+        
+        elif packing == Packing.FFD:
+            inds_by_length = [[] for _ in range(max_length + 1)]
+            for i in range(len(self.input_ids_base)):
+                inds_by_length[len(self.input_ids_base[i])].append(i)
+            
+            bins = []
+            bin_smlen = []
+            for length in range(max_length, 0, -1):
+                for i in inds_by_length[length]:
+                    flag = False
+                    for j in range(len(bins)):
+                        if bin_smlen[j] + length <= max_length:
+                            bins[j].append(i)
+                            bin_smlen[j] += length
+                            flag = True
+                            break
+                    if not flag:
+                        bins.append([i])
+                        bin_smlen.append(length)
+            for inds in bins:
+                self.input_ids.append([])
+                self.segment_ids.append([])
+                for i in inds:
+                    self.input_ids[-1] += self.input_ids_base[i]
+                    self.segment_ids[-1] += [i] * len(self.input_ids_base[i])
 
     def __len__(self):
         return len(self.input_ids)

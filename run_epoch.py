@@ -40,8 +40,8 @@ def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
     raise NotImplementedError
 
 @torch.no_grad()
-def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5) -> None:
-    dataloader = get_dataloader(data_mode, batch_size)
+def run_epoch(data_mode: DataMode, batch_size: int = 64, warmup_batches: int = 5, k: int = 1) -> None:
+    dataloader = get_dataloader(data_mode, batch_size, k)
     print("Dataloader is ready")
     device = "cuda"
     model = get_gpt2_model().to(device)

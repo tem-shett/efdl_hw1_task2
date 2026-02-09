@@ -34,7 +34,7 @@ class WikiTextDataset(Dataset):
         self.input_ids = []
         for s in data:
             token_ids = self.tokenizer.encode(s, add_special_tokens=False)
-            if 0 < len(token_ids) <= MAX_LENGTH:
+            if 1 < len(token_ids) <= MAX_LENGTH:
                 self.input_ids.append(token_ids)
                 if len(self.input_ids) >= 50000:
                     break

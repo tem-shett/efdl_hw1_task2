@@ -83,7 +83,7 @@ def collate_fn_brain(
         key_padding_mask[i, len(tokens) - 1:] = True
     
     causal_mask = generate_square_subsequent_mask(T)
-    return torch.tensor(src_ids), torch.tensor(tgt_ids), causal_mask, key_padding_mask
+    return torch.tensor(src_ids, dtype=torch.long), torch.tensor(tgt_ids, dtype=torch.long), causal_mask, key_padding_mask
 
 
 def collate_fn_bigbrain(

@@ -93,7 +93,7 @@ class SegmentTree:
         res = -1
 
         def search(i, l, r):
-            global res
+            nonlocal res
             if r <= val:
                 return
             if self.tree[i] == 0:
@@ -106,6 +106,8 @@ class SegmentTree:
             m = (l + r) // 2
             search(i * 2 + 1, l, m)
             search(i * 2 + 2, m, r)
+        
+        search(0, 0, self.n)
         
         assert res != -1
         return res

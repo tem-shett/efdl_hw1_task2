@@ -52,7 +52,7 @@ class BrainDataset(WikiTextDataset):
 class BigBrainDataset(WikiTextDataset):
     pass
 
-class UltraBigBrainDataset(Dataset):
+class UltraBigBrainDataset(WikiTextDataset):
     pass
 
 class Packing(Enum):

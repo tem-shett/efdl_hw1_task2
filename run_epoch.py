@@ -35,7 +35,7 @@ def get_dataloader(data_mode: DataMode, batch_size: int, k: int = 1):
     elif data_mode == DataMode.ULTRA_BIG_BRAIN:
         dataset = UltraBigBrainDataset(data_path="wikitext")
         sampler = UltraBigBrainBatchSampler(dataset, batch_size, k=k)
-        return DataLoader(dataset=dataset, batch_size=None, collate_fn=collate_fn_ultrabigbrain, sampler=sampler, num_workers=4, pin_memory=True)
+        return DataLoader(dataset=dataset, collate_fn=collate_fn_ultrabigbrain, batch_sampler=sampler, num_workers=4, pin_memory=True)
 
     raise NotImplementedError
 

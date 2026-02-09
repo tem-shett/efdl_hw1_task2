@@ -38,7 +38,7 @@ class GPT2LikeModel(nn.Module):
         x = self.pos_emb(x)
 
         if causal_mask.dim() == 3:
-            causal_mask = causal_mask.unsqueeze(1).repeat(1, self.n_heads, 1, 1).flatten(0, 1)
+            causal_mask = causal_mask.unsqueeze(1).expand(-1, self.n_heads, -1, -1).reshape(-1, T, T)
 
         x = self.decoder(
             tgt=x,

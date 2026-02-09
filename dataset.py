@@ -93,6 +93,7 @@ class SegmentTree:
         res = -1
 
         def search(i, l, r):
+            global res
             if r <= val:
                 return
             if self.tree[i] == 0:

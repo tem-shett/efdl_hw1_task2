@@ -125,9 +125,9 @@ class UltraBigBrainBatchSampler(Sampler):
             if len(self.batch_by_len[rand_ind]) == batch_size:
                 self.batches.append(self.batch_by_len[rand_ind])
                 self.batch_by_len[rand_ind] = []
-        for len in range(1, max_length + 1):
-            if len(self.batch_by_len[len]) > 0:
-                self.batches.append(self.batch_by_len[len])
+        for length in range(1, max_length + 1):
+            if len(self.batch_by_len[length]) > 0:
+                self.batches.append(self.batch_by_len[length])
 
     def __len__(self):
         return len(self.batches)

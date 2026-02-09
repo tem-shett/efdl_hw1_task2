@@ -25,7 +25,7 @@ def retrieve_parts(data_path):
 
     random.seed(179)
     random.shuffle(parts)
-    return parts[:100000]
+    return parts[:150000]
 
 class WikiTextDataset(Dataset):
     def __init__(self, data_path: str, max_length: int = MAX_LENGTH):
@@ -36,7 +36,7 @@ class WikiTextDataset(Dataset):
             token_ids = self.tokenizer.encode(s, add_special_tokens=False)
             if 0 < len(token_ids) <= MAX_LENGTH:
                 self.input_ids.append(token_ids)
-                if len(self.input_ids) >= 30000:
+                if len(self.input_ids) >= 50000:
                     break
 
     def __len__(self):

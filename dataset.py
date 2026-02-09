@@ -106,7 +106,7 @@ def collate_fn_bigbrain(
         key_padding_mask[i, len(tokens) - 1:] = True
     
     causal_mask = generate_square_subsequent_mask(T)
-    return torch.tensor(src_ids), torch.tensor(tgt_ids), causal_mask, key_padding_mask
+    return torch.tensor(src_ids, dtype=torch.long), torch.tensor(tgt_ids, dtype=torch.long), causal_mask, key_padding_mask
 
 def collate_fn_ultrabigbrain(batch: list[list[int]], max_length: Optional[int] = MAX_LENGTH):
     return collate_fn_bigbrain(batch, max_length)
@@ -125,9 +125,15 @@ class UltraBigBrainBatchSampler(Sampler):
             if len(self.batch_by_len[rand_ind]) == batch_size:
                 self.batches.append(self.batch_by_len[rand_ind])
                 self.batch_by_len[rand_ind] = []
+        current_batch = []
         for length in range(1, max_length + 1):
-            if len(self.batch_by_len[length]) > 0:
-                self.batches.append(self.batch_by_len[length])
+            for ind in self.batch_by_len[length]:
+                if (len(current_batch) > 0 and abs(len(dataset[current_batch[0]]) - len(dataset[ind])) > k) or len(current_batch) == batch_size:
+                    self.batches.append(current_batch)
+                    current_batch = []
+                current_batch.append(ind)
+        if current_batch:
+            self.batches.append(current_batch)
 
     def __len__(self):
         return len(self.batches)
